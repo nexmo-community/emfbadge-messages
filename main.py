@@ -1,3 +1,11 @@
+### Category: Comms 
+### Author: Sam Machin - Nexmo
+### License: MIT
+### Appname: Messages
+### Description: Receive Messages
+
+
+
 import wifi
 import mqtt
 import ugfx
@@ -9,6 +17,7 @@ import database
 import buttons
 from http_client import *
 import ubinascii
+import json
 
 def callback(topic, msg):
 	data = json.loads(msg)
@@ -53,7 +62,7 @@ def display():
 	ugfx.text(20,130,"Powered By, ",ugfx.GREY)
 	ugfx.display_image(15,150,logo)
 	ugfx.set_default_font(ugfx.FONT_TITLE)
-	ugfx.text(40,75,mynumber,ugfx.BLUE)
+	ugfx.text(40,75,mynumber+" ",ugfx.BLUE)
 	
 
 def printmsg(sender, text, ts):
@@ -78,8 +87,15 @@ def printmsg(sender, text, ts):
 def viewmsg():
 	msgid = db.get('msgseq')
 	msg = inbox.get(msgid)
-	data = json.loads(msg)
-	printmsg(data['sender'], data['payload'], data['ts'])
+	if msg == None:
+		ugfx.set_default_font(ugfx.FONT_SMALL)	
+		ugfx.area(0,0,ugfx.width(),ugfx.height(),0x0000)
+		ugfx.text(40,100,"NO MESSAGES",ugfx.BLUE)
+		pyb.delay(1000)
+		return
+	else:
+		data = json.loads(msg)
+		printmsg(data['sender'], data['payload'], data['ts'])
 	while True:
 		if buttons.is_triggered("JOY_UP"):
 			print(msgid)
