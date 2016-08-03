@@ -12,7 +12,10 @@ server = 'imaclocal.sammachin.com'
 def periodic_home(icon):
 	lastseq = str(db.get('msgseq'))
 	url = 'http://'+server+':9000/unread/'+id+'?lastseq='+lastseq
-	msgcount = get(url).text
+	try:
+		msgcount = get(url).text
+	except:
+		return ''
 	if msgcount == '0':
 		return ''
 	else:
