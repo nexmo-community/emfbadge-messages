@@ -7,7 +7,7 @@ update_rate = 15
 
 id = str(ubinascii.hexlify(pyb.unique_id()), 'ascii')
 db = database.Database()
-server = 'imaclocal.sammachin.com'
+server = 'badge.sammachin.com'
 
 def periodic_home(icon):
 	lastseq = str(db.get('msgseq'))

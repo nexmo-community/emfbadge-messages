@@ -158,7 +158,7 @@ db = database.Database()
 inbox = database.Database(filename='inbox.json')
 
 #Server Address
-server = 'imaclocal.sammachin.com'
+server = 'badge.sammachin.com'
 
 #Get CPU ID
 id = str(ubinascii.hexlify(pyb.unique_id()), 'ascii')
