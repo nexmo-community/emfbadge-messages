@@ -55,7 +55,7 @@ def timestring(tt):
 
 
 def display():
-	logo = 'apps/messages/nexmo_logo.bmp'
+	logo = 'apps/nexmo~messages/nexmo_logo.gif'
 	ugfx.area(0,0,ugfx.width(),ugfx.height(),0xFFFF)
 	ugfx.set_default_font(ugfx.FONT_MEDIUM_BOLD)	
 	ugfx.text(20,20,"My Number is...",ugfx.BLACK)
@@ -158,7 +158,7 @@ db = database.Database()
 inbox = database.Database(filename='inbox.json')
 
 #Server Address
-server = 'badge.sammachin.com'
+server = 'badge.emf.camp'
 
 #Get CPU ID
 id = str(ubinascii.hexlify(pyb.unique_id()), 'ascii')
