@@ -22,6 +22,7 @@ import json
 def callback(topic, msg):
 	data = json.loads(msg)
 	inbox.set(data['sequence'], msg)
+	
 	if data['sequence'] == 1:
 		db.set('msgseq', data['sequence'])
 		lastseq = 0
@@ -38,6 +39,8 @@ def callback(topic, msg):
 		print(data)
 	db.flush()
 	inbox.flush()
+
+
 		
 def zf(d):
 	l=2
@@ -127,7 +130,7 @@ def check():
 		
 def myNumber():
 	global mynumber
-	url = 'http://'+server+':9000/number/'+id
+	url = 'http://'+server+'/number/'+id
 	if mynumber == None:
 		mynumber = get(url).text
 	return mynumber
@@ -142,7 +145,60 @@ def reset():
 	inbox.flush()
 	db.flush()
 	
+
+
+def connect_mqtt():
+    global c
+    c = mqtt.MQTTClient(id, server)
+    try:
+        c.connect()
+    except OSError:
+        pyb.delay(200)
+        connect_mqtt()
+        return
+    c.set_callback(callback)
+    c.subscribe('/badge/'+id+'/msg', qos=0)
 	
+def disconnect_mqtt():
+    global c
+    if c:
+        try:
+            c.disconnect()
+        except:
+            pass
+
+def connect(reconnect=False):
+    global c
+    ugfx.clear(ugfx.BLUE)
+    ugfx.set_default_font(ugfx.FONT_SMALL)
+    ugfx.text(0, 10, "Connecting to Wifi...", ugfx.WHITE)
+    if reconnect:
+        disconnect_mqtt()
+        wifi.nic().disconnect()
+    while not wifi.is_connected():
+        try:
+            wifi.connect(wait=True, timeout=15)
+        except:
+            pyb.delay(200)
+    ugfx.text(0, 22, "Connecting to MQTT...", ugfx.WHITE)
+    c = None
+    connect_mqtt()
+
+def warning():
+	ugfx.clear(ugfx.BLUE)
+	ugfx.set_default_font(ugfx.FONT_MEDIUM_BOLD)
+	ugfx.text(30, 10, "WARNING!!!", ugfx.RED)
+	ugfx.set_default_font(ugfx.FONT_SMALL)
+	ugfx.text(30, 40, "Messages are recieved over an ", ugfx.WHITE)
+	ugfx.text(30, 55, "unsecured connection, the text ", ugfx.WHITE)
+	ugfx.text(30, 70, "and senders number may be visable ", ugfx.WHITE)
+	ugfx.text(30, 105, "Press A to accept and continue ", ugfx.WHITE)
+	while True:
+		if buttons.is_triggered('BTN_A'):
+			ugfx.clear()
+			return
+
+
 #Check and Connect to WiFi
 if wifi.is_connected():
 	pass
@@ -158,7 +214,7 @@ db = database.Database()
 inbox = database.Database(filename='inbox.json')
 
 #Server Address
-server = 'badge.emf.camp'
+server = 'badge.sammachin.com'
 
 #Get CPU ID
 id = str(ubinascii.hexlify(pyb.unique_id()), 'ascii')
@@ -167,31 +223,51 @@ id = str(ubinascii.hexlify(pyb.unique_id()), 'ascii')
 mynumber = None
 myNumber()
 
-# Setup Sequence ID
+# Setup Sequence ID If First run show Warning
 if db.get('msgseq') == None:
+	warning()
 	db.set('msgseq', 0)
 	db.flush()
 else:
 	pass
 
 
-#Setup and Connect MQTT
-c = mqtt.MQTTClient('badge'+id, server)
-c.connect()
-c.set_callback(callback)
-c.subscribe('/badge/'+id, qos=0)
+#Connect MQTT
+connect()
+
+#Check for unread messages
 lastseq = db.get('msgseq')
-c.publish('resend/'+id, str(lastseq))
+url = 'http://%s/resend/%s?lastseq=%s' % (server, id, lastseq)
+resend = get(url).text
 
 #Main Screen and Watch for Input/Messages
 display()
+next_tick = 0
 while True:
 	if buttons.is_triggered('BTN_A'):
 		viewmsg()
 	if buttons.is_triggered('BTN_B'):
 		display()
-	check()
-		
+	if pyb.millis() > next_tick:
+		if not wifi.is_connected():
+			connect(reconnect=True)
+		try:
+			c.check_msg()
+		except:
+			pass
+		try:
+			c.sock.send(b"\xc0\0")  # ping
+		except:
+			connect(reconnect=True)
+			display()
+		next_tick = pyb.millis() + 30000
+	try:
+		c.check_msg()
+	except:
+		pyb.delay(200)
+
+ugfx.clear()
+
 		
 	
  
